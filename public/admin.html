@@ -69,7 +69,8 @@
     <!-- Карточка игрока -->
     <div class="user-card" id="user-card" style="display:none">
         <h3 id="user-title">Игрок</h3>
-        <div class="field-row"><label>Монеты</label><input type="number" id="f-coins" /></div>
+        <div class="field-row"><label>Монеты</label><input type="number" id="f-coins" readonly style="opacity:0.5" /></div>
+        <div class="field-row"><label>Добавить 💰</label><input type="number" id="f-coins-add" placeholder="например 500" /></div>
         <div class="field-row"><label>Уровень</label><input type="number" id="f-level" min="1" max="50" /></div>
         <div class="field-row"><label>XP</label><input type="number" id="f-xp" /></div>
         <div class="field-row"><label>Убийств</label><input type="number" id="f-kills" /></div>
@@ -120,6 +121,7 @@
         document.getElementById('user-title').innerText =
             `${data.first_name || ''} @${data.username || '?'} (${data.telegram_id})`;
         document.getElementById('f-coins').value  = data.coins;
+        document.getElementById('f-coins-add').value = '';
         document.getElementById('f-level').value  = data.level;
         document.getElementById('f-xp').value     = data.xp;
         document.getElementById('f-kills').value  = data.total_kills;
@@ -134,11 +136,14 @@
         const owned = document.getElementById('f-owned').value
             .split(',').map(s => s.trim()).filter(Boolean);
 
+        const addCoins = parseInt(document.getElementById('f-coins-add').value) || 0;
+        const currentCoins = parseInt(document.getElementById('f-coins').value) || 0;
+
         fetch(`/admin/user/${currentUserId}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
             body: JSON.stringify({
-                coins:        parseInt(document.getElementById('f-coins').value),
+                coins:        currentCoins + addCoins,
                 level:        parseInt(document.getElementById('f-level').value),
                 xp:           parseInt(document.getElementById('f-xp').value),
                 total_kills:  parseInt(document.getElementById('f-kills').value),
@@ -147,7 +152,13 @@
             })
         })
         .then(r => r.json())
-        .then(() => showMsg('save-msg', '✅ Сохранено!', 'success'))
+        .then(() => {
+            const newCoins = (parseInt(document.getElementById('f-coins').value) || 0) +
+                             (parseInt(document.getElementById('f-coins-add').value) || 0);
+            document.getElementById('f-coins').value = newCoins;
+            document.getElementById('f-coins-add').value = '';
+            showMsg('save-msg', '✅ Сохранено!', 'success');
+        })
         .catch(() => showMsg('save-msg', '❌ Ошибка', 'error'));
     }
 
