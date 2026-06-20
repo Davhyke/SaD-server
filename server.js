@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 require('dotenv').config();
 
 const userRoutes = require('./routes/user');
@@ -9,8 +10,13 @@ const { initDB } = require('./db');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type', 'x-admin-key']
+}));
 app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Роуты
 app.use('/api', userRoutes);
