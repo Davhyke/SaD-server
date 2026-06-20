@@ -71,8 +71,10 @@
         <h3 id="user-title">Игрок</h3>
         <div class="field-row"><label>Монеты</label><input type="number" id="f-coins" readonly style="opacity:0.5" /></div>
         <div class="field-row"><label>Добавить 💰</label><input type="number" id="f-coins-add" placeholder="например 500" /></div>
-        <div class="field-row"><label>Уровень</label><input type="number" id="f-level" min="1" max="50" /></div>
-        <div class="field-row"><label>XP</label><input type="number" id="f-xp" /></div>
+        <div class="field-row"><label>Уровень</label><input type="number" id="f-level" readonly style="opacity:0.5" /></div>
+        <div class="field-row"><label>Уст. уровень</label><input type="number" id="f-set-level" min="1" max="50" placeholder="оставь пустым чтобы не менять" /></div>
+        <div class="field-row"><label>XP</label><input type="number" id="f-xp" readonly style="opacity:0.5" /></div>
+        <div class="field-row"><label>Добавить XP</label><input type="number" id="f-add-xp" placeholder="например 100" /></div>
         <div class="field-row"><label>Убийств</label><input type="number" id="f-kills" /></div>
         <div class="field-row"><label>Скин</label><input type="text" id="f-skin" /></div>
         <div class="field-row"><label>Скины</label><input type="text" id="f-owned" /></div>
@@ -122,8 +124,10 @@
             `${data.first_name || ''} @${data.username || '?'} (${data.telegram_id})`;
         document.getElementById('f-coins').value  = data.coins;
         document.getElementById('f-coins-add').value = '';
-        document.getElementById('f-level').value  = data.level;
-        document.getElementById('f-xp').value     = data.xp;
+        document.getElementById('f-level').value    = data.level;
+        document.getElementById('f-xp').value       = data.xp;
+        document.getElementById('f-set-level').value = '';
+        document.getElementById('f-add-xp').value   = '';
         document.getElementById('f-kills').value  = data.total_kills;
         document.getElementById('f-skin').value   = data.current_skin;
         document.getElementById('f-owned').value  = (data.owned_skins || []).join(', ');
@@ -138,26 +142,33 @@
 
         const addCoins = parseInt(document.getElementById('f-coins-add').value) || 0;
         const currentCoins = parseInt(document.getElementById('f-coins').value) || 0;
+        const setLevel = document.getElementById('f-set-level').value;
+        const addXp = document.getElementById('f-add-xp').value;
 
         fetch(`/admin/user/${currentUserId}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
             body: JSON.stringify({
-                coins:        currentCoins + addCoins,
-                level:        parseInt(document.getElementById('f-level').value),
-                xp:           parseInt(document.getElementById('f-xp').value),
-                total_kills:  parseInt(document.getElementById('f-kills').value),
+                coins:       currentCoins + addCoins,
+                set_level:   setLevel ? parseInt(setLevel) : null,
+                add_xp:      addXp ? parseInt(addXp) : null,
+                total_kills: parseInt(document.getElementById('f-kills').value),
                 current_skin: document.getElementById('f-skin').value,
                 owned_skins:  owned
             })
         })
         .then(r => r.json())
-        .then(() => {
-            const newCoins = (parseInt(document.getElementById('f-coins').value) || 0) +
-                             (parseInt(document.getElementById('f-coins-add').value) || 0);
-            document.getElementById('f-coins').value = newCoins;
+        .then(data => {
+            document.getElementById('f-coins').value = data.coins;
+            document.getElementById('f-level').value = data.level;
+            document.getElementById('f-xp').value    = data.xp;
             document.getElementById('f-coins-add').value = '';
-            showMsg('save-msg', '✅ Сохранено!', 'success');
+            document.getElementById('f-set-level').value = '';
+            document.getElementById('f-add-xp').value    = '';
+            let msg = '✅ Сохранено!';
+            if (data.levelReward) msg += ` +${data.levelReward}💰 за уровни`;
+            if (data.xpReward)    msg += ` +${data.xpReward}💰 за XP`;
+            showMsg('save-msg', msg, 'success');
         })
         .catch(() => showMsg('save-msg', '❌ Ошибка', 'error'));
     }
